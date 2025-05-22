@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -8,6 +9,9 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed;
     private Vector2 curMovementInput;
     public float jumpPower;
+    private float defaultJumpPower;
+    private Coroutine jumpBoostRoutine;
+
     public LayerMask groundLayerMask;
 
     [Header("Look")]
@@ -24,9 +28,14 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rigidbody;
 
+    [Header("UI")]
+    public GameObject inventoryPanel; // Inspector에서 연결할 인벤토리 패널
+    private bool isInventoryOpen = false;
+
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
+        defaultJumpPower = jumpPower;
     }
 
     void Start()
@@ -116,4 +125,30 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = toggle ? CursorLockMode.None : CursorLockMode.Locked;
         canLook = !toggle;
     }
+    public void OnInventoryInput(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            isInventoryOpen = !isInventoryOpen;
+            inventoryPanel.SetActive(isInventoryOpen);
+            ToggleCursor(isInventoryOpen); // 커서 락/해제
+        }
+    }
+    public void ApplyJumpBoost(float amount, float duration)
+    {
+        if (jumpBoostRoutine != null)
+        {
+            StopCoroutine(jumpBoostRoutine);
+        }
+        jumpBoostRoutine = StartCoroutine(JumpBoostCoroutine(amount, duration));
+    }
+
+    private IEnumerator JumpBoostCoroutine(float amount, float duration)
+    {
+        jumpPower += amount;
+        yield return new WaitForSeconds(duration);
+        jumpPower = defaultJumpPower;
+        jumpBoostRoutine = null;
+    }
+
 }
